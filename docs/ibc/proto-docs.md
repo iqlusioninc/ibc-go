@@ -154,6 +154,10 @@
   
     - [Msg](#ibc.applications.transfer.v1.Msg)
   
+- [ibc/applications/transfer/v2/authz.proto](#ibc/applications/transfer/v2/authz.proto)
+    - [PortChannelAmount](#ibc.applications.transfer.v2.PortChannelAmount)
+    - [TransferAuthorization](#ibc.applications.transfer.v2.TransferAuthorization)
+  
 - [ibc/applications/transfer/v2/packet.proto](#ibc/applications/transfer/v2/packet.proto)
     - [FungibleTokenPacketData](#ibc.applications.transfer.v2.FungibleTokenPacketData)
   
@@ -223,8 +227,6 @@
     - [IdentifiedGenesisMetadata](#ibc.core.client.v1.IdentifiedGenesisMetadata)
   
 - [ibc/core/client/v1/query.proto](#ibc/core/client/v1/query.proto)
-    - [QueryClientParamsRequest](#ibc.core.client.v1.QueryClientParamsRequest)
-    - [QueryClientParamsResponse](#ibc.core.client.v1.QueryClientParamsResponse)
     - [QueryClientStateRequest](#ibc.core.client.v1.QueryClientStateRequest)
     - [QueryClientStateResponse](#ibc.core.client.v1.QueryClientStateResponse)
     - [QueryClientStatesRequest](#ibc.core.client.v1.QueryClientStatesRequest)
@@ -237,6 +239,8 @@
     - [QueryConsensusStateResponse](#ibc.core.client.v1.QueryConsensusStateResponse)
     - [QueryConsensusStatesRequest](#ibc.core.client.v1.QueryConsensusStatesRequest)
     - [QueryConsensusStatesResponse](#ibc.core.client.v1.QueryConsensusStatesResponse)
+    - [QueryParamsRequest](#ibc.core.client.v1.QueryParamsRequest)
+    - [QueryParamsResponse](#ibc.core.client.v1.QueryParamsResponse)
     - [QueryUpgradedClientStateRequest](#ibc.core.client.v1.QueryUpgradedClientStateRequest)
     - [QueryUpgradedClientStateResponse](#ibc.core.client.v1.QueryUpgradedClientStateResponse)
     - [QueryUpgradedConsensusStateRequest](#ibc.core.client.v1.QueryUpgradedConsensusStateRequest)
@@ -1663,9 +1667,8 @@ MsgSendTx defines the payload for Msg/SendTx
 | ----- | ---- | ----- | ----------- |
 | `owner` | [string](#string) |  |  |
 | `connection_id` | [string](#string) |  |  |
-| `timeout_height` | [ibc.core.client.v1.Height](#ibc.core.client.v1.Height) |  | Timeout height relative to the current block height. The timeout is disabled when set to 0. |
-| `timeout_timestamp` | [uint64](#uint64) |  | Timeout timestamp in absolute nanoseconds since unix epoch. The timeout is disabled when set to 0. |
 | `packet_data` | [ibc.applications.interchain_accounts.v1.InterchainAccountPacketData](#ibc.applications.interchain_accounts.v1.InterchainAccountPacketData) |  |  |
+| `relative_timeout` | [uint64](#uint64) |  | Relative timeout timestamp provided will be added to the current block time during transaction execution. The timeout timestamp must be non-zero. |
 
 
 
@@ -2256,6 +2259,7 @@ https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transf
 | `receiver` | [string](#string) |  | the recipient address on the destination chain |
 | `timeout_height` | [ibc.core.client.v1.Height](#ibc.core.client.v1.Height) |  | Timeout height relative to the current block height. The timeout is disabled when set to 0. |
 | `timeout_timestamp` | [uint64](#uint64) |  | Timeout timestamp in absolute nanoseconds since unix epoch. The timeout is disabled when set to 0. |
+| `memo` | [string](#string) |  | optional memo |
 
 
 
@@ -2266,6 +2270,11 @@ https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transf
 
 ### MsgTransferResponse
 MsgTransferResponse defines the Msg/Transfer response type.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `sequence` | [uint64](#uint64) |  | sequence number of the transfer packet sent |
 
 
 
@@ -2286,6 +2295,56 @@ Msg defines the ibc/transfer Msg service.
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `Transfer` | [MsgTransfer](#ibc.applications.transfer.v1.MsgTransfer) | [MsgTransferResponse](#ibc.applications.transfer.v1.MsgTransferResponse) | Transfer defines a rpc handler method for MsgTransfer. | |
+
+ <!-- end services -->
+
+
+
+<a name="ibc/applications/transfer/v2/authz.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## ibc/applications/transfer/v2/authz.proto
+
+
+
+<a name="ibc.applications.transfer.v2.PortChannelAmount"></a>
+
+### PortChannelAmount
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `source_port` | [string](#string) |  | the port on which the packet will be sent |
+| `source_channel` | [string](#string) |  | the channel by which the packet will be sent |
+| `spend_limit` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated | spend limitation on the channel |
+| `allowed_addresses` | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="ibc.applications.transfer.v2.TransferAuthorization"></a>
+
+### TransferAuthorization
+TransferAuthorization allows the grantee to spend up to spend_limit coins from
+the granter's account for ibc transfer on a specific channel
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `allocations` | [PortChannelAmount](#ibc.applications.transfer.v2.PortChannelAmount) | repeated | port and channel amounts |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
 
  <!-- end services -->
 
@@ -2312,6 +2371,7 @@ https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transf
 | `amount` | [string](#string) |  | the token amount to be transferred |
 | `sender` | [string](#string) |  | the sender address |
 | `receiver` | [string](#string) |  | the recipient address on the destination chain |
+| `memo` | [string](#string) |  | optional memo |
 
 
 
@@ -3340,33 +3400,6 @@ client id.
 
 
 
-<a name="ibc.core.client.v1.QueryClientParamsRequest"></a>
-
-### QueryClientParamsRequest
-QueryClientParamsRequest is the request type for the Query/ClientParams RPC
-method.
-
-
-
-
-
-
-<a name="ibc.core.client.v1.QueryClientParamsResponse"></a>
-
-### QueryClientParamsResponse
-QueryClientParamsResponse is the response type for the Query/ClientParams RPC
-method.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `params` | [Params](#ibc.core.client.v1.Params) |  | params defines the parameters of the module. |
-
-
-
-
-
-
 <a name="ibc.core.client.v1.QueryClientStateRequest"></a>
 
 ### QueryClientStateRequest
@@ -3573,6 +3606,33 @@ Query/ConsensusStates RPC method
 
 
 
+<a name="ibc.core.client.v1.QueryParamsRequest"></a>
+
+### QueryParamsRequest
+QueryParamsRequest is the request type for the Query/Params RPC
+method.
+
+
+
+
+
+
+<a name="ibc.core.client.v1.QueryParamsResponse"></a>
+
+### QueryParamsResponse
+QueryParamsResponse is the response type for the Query/Params RPC
+method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `params` | [Params](#ibc.core.client.v1.Params) |  | params defines the parameters of the module. |
+
+
+
+
+
+
 <a name="ibc.core.client.v1.QueryUpgradedClientStateRequest"></a>
 
 ### QueryUpgradedClientStateRequest
@@ -3646,7 +3706,7 @@ Query provides defines the gRPC querier service
 | `ConsensusStates` | [QueryConsensusStatesRequest](#ibc.core.client.v1.QueryConsensusStatesRequest) | [QueryConsensusStatesResponse](#ibc.core.client.v1.QueryConsensusStatesResponse) | ConsensusStates queries all the consensus state associated with a given client. | GET|/ibc/core/client/v1/consensus_states/{client_id}|
 | `ConsensusStateHeights` | [QueryConsensusStateHeightsRequest](#ibc.core.client.v1.QueryConsensusStateHeightsRequest) | [QueryConsensusStateHeightsResponse](#ibc.core.client.v1.QueryConsensusStateHeightsResponse) | ConsensusStateHeights queries the height of every consensus states associated with a given client. | GET|/ibc/core/client/v1/consensus_states/{client_id}/heights|
 | `ClientStatus` | [QueryClientStatusRequest](#ibc.core.client.v1.QueryClientStatusRequest) | [QueryClientStatusResponse](#ibc.core.client.v1.QueryClientStatusResponse) | Status queries the status of an IBC client. | GET|/ibc/core/client/v1/client_status/{client_id}|
-| `ClientParams` | [QueryClientParamsRequest](#ibc.core.client.v1.QueryClientParamsRequest) | [QueryClientParamsResponse](#ibc.core.client.v1.QueryClientParamsResponse) | ClientParams queries all parameters of the ibc client. | GET|/ibc/client/v1/params|
+| `Params` | [QueryParamsRequest](#ibc.core.client.v1.QueryParamsRequest) | [QueryParamsResponse](#ibc.core.client.v1.QueryParamsResponse) | Params queries all parameters of the ibc client. | GET|/ibc/core/client/v1/params|
 | `UpgradedClientState` | [QueryUpgradedClientStateRequest](#ibc.core.client.v1.QueryUpgradedClientStateRequest) | [QueryUpgradedClientStateResponse](#ibc.core.client.v1.QueryUpgradedClientStateResponse) | UpgradedClientState queries an Upgraded IBC light client. | GET|/ibc/core/client/v1/upgraded_client_states|
 | `UpgradedConsensusState` | [QueryUpgradedConsensusStateRequest](#ibc.core.client.v1.QueryUpgradedConsensusStateRequest) | [QueryUpgradedConsensusStateResponse](#ibc.core.client.v1.QueryUpgradedConsensusStateResponse) | UpgradedConsensusState queries an Upgraded IBC consensus state. | GET|/ibc/core/client/v1/upgraded_consensus_states|
 
